@@ -33,23 +33,6 @@ spec:
       {{- end }}
       {{- end }}
     spec:
-      initContainers:
-        - name: combine-certs
-          image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              cat /etc/tls/kafka-cluster-ca-cert/ca.crt /etc/tls/kafka-user/ca.crt > /etc/tls/kafka-combined-ca-cert/ca.crt
-          volumeMounts:
-          - name: kafka-cluster-ca-cert-secret
-            mountPath: /etc/tls/kafka-cluster-ca-cert
-            readOnly: true
-          - name: kafka-user-secret
-            mountPath: /etc/tls/kafka-user
-            readOnly: true
-          - name: kafka-combined-ca-cert
-            mountPath: /etc/tls/kafka-combined-ca-cert
       containers:
         {{- if .Values.prometheus.jmx.enabled }}
         - name: prometheus-jmx-exporter
@@ -96,9 +79,6 @@ spec:
             readOnly: true
           - name: kafka-user-secret
             mountPath: /etc/tls/kafka-user
-            readOnly: true
-          - name: kafka-combined-ca-cert
-            mountPath: /etc/tls/kafka-combined-ca-cert
             readOnly: true
           env:
           - name: KSQL_BOOTSTRAP_SERVERS
@@ -157,8 +137,6 @@ spec:
       - name: kafka-user-secret
         secret:
           secretName: ksqldb
-      - name: kafka-combined-ca-cert
-        emptyDir: {}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
