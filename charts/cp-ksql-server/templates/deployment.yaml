@@ -74,6 +74,12 @@ spec:
           - name: ksql-queries
             mountPath: /etc/ksql/queries
           {{- end }}
+          - name: kafka-cluster-ca-cert-secret
+            mountPath: /etc/tls/kafka-cluster-ca-cert
+            readOnly: true
+          - name: kafka-user-secret
+            mountPath: /etc/tls/kafka-user
+            readOnly: true
           env:
           - name: KSQL_BOOTSTRAP_SERVERS
             value: {{ template "cp-ksql-server.kafka.bootstrapServers" . }}
@@ -91,9 +97,20 @@ spec:
             value: http://0.0.0.0:8088
           {{- end }}
           {{- range $key, $value := .Values.configurationOverrides }}
-          - name: {{ printf "KSQL_%s" $key | replace "." "_" | upper | quote }}
+            {{- if (kindIs "map" $value) }}
+              {{- if hasKey $value "secret" }}
+          - name: {{ printf "KSQL_%s" $key | replace "." "_" | upper }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $value.secret.name | quote }}
+                key: {{ $value.secret.key | quote }}
+              {{- end }}
+            {{- else }}
+          - name: {{ printf "KSQL_%s" $key | replace "." "_" | upper }}
             value: {{ $value | quote }}
+            {{- end }}
           {{- end }}
+
           {{- if .Values.jmx.port }}
           - name: JMX_PORT
             value: "{{ .Values.jmx.port }}"
@@ -113,6 +130,13 @@ spec:
         configMap:
           name: {{ template "cp-ksql-server.fullname" . }}-ksql-queries-configmap
       {{- end }}
+      # TODO: Optional if .Values.configurationOverrides.security.protocol is set to SSL, generic
+      - name: kafka-cluster-ca-cert-secret
+        secret:
+          secretName: kafka-billing-dev-glo1-cluster-ca-cert
+      - name: kafka-user-secret
+        secret:
+          secretName: ksqldb
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
