@@ -98,11 +98,14 @@ cp-schema-registry:
 ## ref: https://docs.confluent.io/current/ksql/docs/installation/server-config/config-reference.html
 configurationOverrides: # {}
   security.protocol: "SSL"
-  ssl.key.password: "ksqldb"
-  ssl.truststore.location: /etc/tls/kafka-cluster-ca-cert/ca.crt
-  ssl.keystore.location: /etc/tls/kafka-user/user.crt
-  ssl.keystore.key: /etc/tls/kafka-user/user.key
-  ssl.keystore.password:
+  # ssl.truststore.type: "PEM"
+  # ssl.keystore.type: "PEM"
+  # ssl.truststore.location: /etc/tls/kafka-cluster-ca-cert/ca.crt
+  # ssl.keystore.location: /etc/tls/kafka-user/user.key
+  ssl.ca.location: "/etc/tls/kafka-cluster-ca-cert/ca.crt"
+  ssl.certificate.location: "/etc/tls/kafka-user/user.crt"
+  ssl.key.location: "/etc/tls/kafka-user/user.key"
+  ssl.key.password:
     secret:
       name: "ksqldb"
       key: "user.password"
