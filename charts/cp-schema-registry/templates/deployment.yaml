@@ -37,6 +37,35 @@ spec:
       {{- if .Values.securityContext }}
 {{ toYaml .Values.securityContext | indent 8 }}
       {{- end}}
+      initContainers:
+      - name: convert-pem-to-jks
+        image: openjdk:11
+        command:
+          - sh
+          - -c
+          - |
+            # Extract passwords
+            CA_PASSWORD=$(cat /etc/tls/kafka-cluster-ca-cert/ca.password)
+            USER_PASSWORD=$(cat /etc/tls/kafka-user/user.password)
+
+            # Convert CA cert to JKS truststore
+            keytool -import -trustcacerts -file /etc/tls/kafka-cluster-ca-cert/ca.crt -alias kafka-cluster-ca -keystore /etc/tls/kafka-jks/truststore.jks -storepass $CA_PASSWORD -noprompt
+
+            # Convert user cert and key to PKCS12
+            openssl pkcs12 -export -in /etc/tls/kafka-user/user.crt -inkey /etc/tls/kafka-user/user.key -out /etc/tls/kafka-jks/user.p12 -name kafka-user -CAfile /etc/tls/kafka-user/ca.crt -caname root -password pass:$USER_PASSWORD
+
+            # Convert PKCS12 to JKS keystore
+            keytool -importkeystore -deststorepass $USER_PASSWORD -destkeypass $USER_PASSWORD -destkeystore /etc/tls/kafka-jks/keystore.jks -srckeystore /etc/tls/kafka-jks/user.p12 -srcstoretype PKCS12 -srcstorepass $USER_PASSWORD -alias kafka-user
+
+        volumeMounts:
+          - name: kafka-cluster-ca-cert-secret
+            mountPath: "/etc/tls/kafka-cluster-ca-cert"
+            readOnly: true
+          - name: kafka-user-secret
+            mountPath: "/etc/tls/kafka-user"
+            readOnly: true
+          - name: kafka-jks
+            mountPath: "/etc/tls/kafka-jks"
       containers:
         {{- if .Values.prometheus.jmx.enabled }}
         - name: prometheus-jmx-exporter
@@ -73,13 +102,22 @@ spec:
             {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+          - name: kafka-cluster-ca-cert-secret
+            mountPath: /etc/tls/kafka-cluster-ca-cert
+            readOnly: true
+          - name: kafka-user-secret
+            mountPath: /etc/tls/kafka-user
+            readOnly: true
+          - name: kafka-jks
+            mountPath: "/etc/tls/kafka-jks"
           env:
           - name: SCHEMA_REGISTRY_HOST_NAME
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
           - name: SCHEMA_REGISTRY_LISTENERS
-            value: http://0.0.0.0:{{ .Values.servicePort }}
+            value: https://0.0.0.0:{{ .Values.servicePort }}
           - name: SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS
             value: {{ template "cp-schema-registry.kafka.bootstrapServers" . }}
           - name: SCHEMA_REGISTRY_KAFKASTORE_GROUP_ID
@@ -88,10 +126,20 @@ spec:
             value: "true"
           - name: SCHEMA_REGISTRY_HEAP_OPTS
             value: "{{ .Values.heapOptions }}"
-          {{ range $configName, $configValue := .Values.configurationOverrides }}
-          - name: SCHEMA_REGISTRY_{{ $configName | replace "." "_" | upper }}
-            value: {{ $configValue | quote }}
-          {{ end }}
+          {{- range $key, $value := .Values.configurationOverrides }}
+            {{- if (kindIs "map" $value) }}
+              {{- if hasKey $value "secret" }}
+          - name: {{ printf "SCHEMA_REGISTRY_%s" $key | replace "." "_" | upper }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $value.secret.name | quote }}
+                key: {{ $value.secret.key | quote }}
+              {{- end }}
+            {{- else }}
+          - name: {{ printf "SCHEMA_REGISTRY_%s" $key | replace "." "_" | upper }}
+            value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
           {{- range $key, $value := .Values.customEnv }}
           - name: {{ $key | quote }}
             value: {{ $value | quote }}
@@ -114,6 +162,15 @@ spec:
         configMap:
           name: {{ template "cp-schema-registry.fullname" . }}-jmx-configmap
       {{- end }}
+      # TODO: Optional if .Values.configurationOverrides.security.protocol is set to SSL, generic
+      - name: kafka-cluster-ca-cert-secret
+        secret:
+          secretName: kafka-billing-dev-glo1-cluster-ca-cert
+      - name: kafka-user-secret
+        secret:
+          secretName: ksqldb
+      - name: kafka-jks
+        emptyDir: {}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
