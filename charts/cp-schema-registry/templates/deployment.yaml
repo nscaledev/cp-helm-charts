@@ -37,35 +37,6 @@ spec:
       {{- if .Values.securityContext }}
 {{ toYaml .Values.securityContext | indent 8 }}
       {{- end}}
-      initContainers:
-      - name: convert-pem-to-jks
-        image: openjdk:11
-        command:
-          - sh
-          - -c
-          - |
-            # Extract passwords
-            CA_PASSWORD=$(cat /etc/tls/kafka-cluster-ca-cert/ca.password)
-            USER_PASSWORD=$(cat /etc/tls/kafka-user/user.password)
-
-            # Convert CA cert to JKS truststore
-            keytool -import -trustcacerts -file /etc/tls/kafka-cluster-ca-cert/ca.crt -alias kafka-cluster-ca -keystore /etc/tls/kafka-jks/truststore.jks -storepass $CA_PASSWORD -noprompt
-
-            # Convert user cert and key to PKCS12
-            openssl pkcs12 -export -in /etc/tls/kafka-user/user.crt -inkey /etc/tls/kafka-user/user.key -out /etc/tls/kafka-jks/user.p12 -name kafka-user -CAfile /etc/tls/kafka-user/ca.crt -caname root -password pass:$USER_PASSWORD
-
-            # Convert PKCS12 to JKS keystore
-            keytool -importkeystore -deststorepass $USER_PASSWORD -destkeypass $USER_PASSWORD -destkeystore /etc/tls/kafka-jks/keystore.jks -srckeystore /etc/tls/kafka-jks/user.p12 -srcstoretype PKCS12 -srcstorepass $USER_PASSWORD -alias kafka-user
-
-        volumeMounts:
-          - name: kafka-cluster-ca-cert-secret
-            mountPath: "/etc/tls/kafka-cluster-ca-cert"
-            readOnly: true
-          - name: kafka-user-secret
-            mountPath: "/etc/tls/kafka-user"
-            readOnly: true
-          - name: kafka-jks
-            mountPath: "/etc/tls/kafka-jks"
       containers:
         {{- if .Values.prometheus.jmx.enabled }}
         - name: prometheus-jmx-exporter
@@ -92,9 +63,6 @@ spec:
         - name: {{ template "cp-schema-registry.name" . }}-server
           image: "{{ .Values.image }}:{{ .Values.imageTag }}"
           imagePullPolicy: "{{ .Values.imagePullPolicy }}"
-          securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
           ports:
             - name: schema-registry
               containerPort: {{ .Values.servicePort }}
@@ -112,8 +80,6 @@ spec:
           - name: kafka-user-secret
             mountPath: /etc/tls/kafka-user
             readOnly: true
-          - name: kafka-jks
-            mountPath: "/etc/tls/kafka-jks"
           env:
           - name: SCHEMA_REGISTRY_HOST_NAME
             valueFrom:
@@ -172,8 +138,6 @@ spec:
       - name: kafka-user-secret
         secret:
           secretName: schema-registry
-      - name: kafka-jks
-        emptyDir: {}
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}

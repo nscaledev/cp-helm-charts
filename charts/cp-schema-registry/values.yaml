@@ -27,23 +27,23 @@ imagePullSecrets:
 ## Configuration Options can be found here: https://docs.confluent.io/current/schema-registry/docs/config.html
 configurationOverrides: # {}
   kafkastore.security.protocol: SSL
-  kafkastore.ssl.truststore.location: /etc/tls/kafka-jks/truststore.jks
-  # ssl.truststore.type: PKCS12
-  # ssl.truststore.location: /etc/tls/kafka-cluster-ca-cert/ca.p12
+  # kafkastore.ssl.truststore.location: /etc/tls/kafka-jks/truststore.jks
+  kafkastore.ssl.truststore.type: PKCS12
+  kafkastore.ssl.truststore.location: /etc/tls/kafka-cluster-ca-cert/ca.p12
   kafkastore.ssl.truststore.password:
     secret:
       name: "kafka-billing-dev-glo1-cluster-ca-cert"
       key: "ca.password"
-  kafkastore.ssl.keystore.location: /etc/tls/kafka-jks/keystore.jks
-  # ssl.keystore.type: PKCS12
-  # ssl.keystore.location: /etc/tls/kafka-user/user.p12
+  # kafkastore.ssl.keystore.location: /etc/tls/kafka-jks/keystore.jks
+  kafkastore.ssl.keystore.type: PKCS12
+  kafkastore.ssl.keystore.location: /etc/tls/kafka-user/user.p12
   kafkastore.ssl.keystore.password:
     secret:
-      name: "ksqldb"
+      name: "schema-registry"
       key: "user.password"
   kafkastore.ssl.key.password:
     secret:
-      name: "ksqldb"
+      name: "schema-registry"
       key: "user.password"
 
 ## Additional env variables
@@ -91,8 +91,8 @@ affinity: {}
 ## Privilege and access control settings for a Pod or Container
 ## https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 securityContext:
-  runAsUser: 10001
-  runAsGroup: 10001
+  runAsUser: 1000
+  runAsGroup: 1000
   fsGroup: 10001
   runAsNonRoot: true
 
