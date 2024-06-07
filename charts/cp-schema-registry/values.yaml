@@ -12,7 +12,7 @@ replicaCount: 1
 ## Image Info
 ## ref: https://hub.docker.com/r/confluentinc/cp-schema-registry/
 image: confluentinc/cp-schema-registry
-imageTag: 6.1.0
+imageTag: 7.6.1
 
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -26,22 +26,22 @@ imagePullSecrets:
 ## Schema Registry Settings Overrides
 ## Configuration Options can be found here: https://docs.confluent.io/current/schema-registry/docs/config.html
 configurationOverrides: # {}
-  security.protocol: SSL
-  ssl.truststore.location: /etc/tls/kafka-jks/truststore.jks
+  kafkastore.security.protocol: SSL
+  kafkastore.ssl.truststore.location: /etc/tls/kafka-jks/truststore.jks
   # ssl.truststore.type: PKCS12
   # ssl.truststore.location: /etc/tls/kafka-cluster-ca-cert/ca.p12
-  ssl.truststore.password:
+  kafkastore.ssl.truststore.password:
     secret:
       name: "kafka-billing-dev-glo1-cluster-ca-cert"
       key: "ca.password"
-  ssl.keystore.location: /etc/tls/kafka-jks/keystore.jks
+  kafkastore.ssl.keystore.location: /etc/tls/kafka-jks/keystore.jks
   # ssl.keystore.type: PKCS12
   # ssl.keystore.location: /etc/tls/kafka-user/user.p12
-  ssl.keystore.password:
+  kafkastore.ssl.keystore.password:
     secret:
       name: "ksqldb"
       key: "user.password"
-  ssl.key.password:
+  kafkastore.ssl.key.password:
     secret:
       name: "ksqldb"
       key: "user.password"
