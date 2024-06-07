@@ -94,7 +94,7 @@ spec:
             value: /etc/ksql/queries/queries.sql
           {{- else }}
           - name: KSQL_LISTENERS
-            value: https://0.0.0.0:8088
+            value: http://0.0.0.0:8088
           {{- end }}
           {{- range $key, $value := .Values.configurationOverrides }}
             {{- if (kindIs "map" $value) }}

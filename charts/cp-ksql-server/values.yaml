@@ -99,14 +99,12 @@ cp-schema-registry:
 configurationOverrides: # {}
   ssl.client.auth: true
   security.protocol: SSL
-  # ssl.truststore.location: /etc/tls/kafka-jks/truststore.jks
   ssl.truststore.type: PKCS12
   ssl.truststore.location: /etc/tls/kafka-cluster-ca-cert/ca.p12
   ssl.truststore.password:
     secret:
       name: "kafka-billing-dev-glo1-cluster-ca-cert"
       key: "ca.password"
-  # ssl.keystore.location: /etc/tls/kafka-jks/keystore.jks
   ssl.keystore.type: PKCS12
   ssl.keystore.location: /etc/tls/kafka-user/user.p12
   ssl.keystore.password:
