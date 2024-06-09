@@ -73,6 +73,13 @@ spec:
             {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+          - name: kafka-cluster-ca-cert-secret
+            mountPath: /etc/tls/kafka-cluster-ca-cert
+            readOnly: true
+          - name: kafka-user-secret
+            mountPath: /etc/tls/kafka-user
+            readOnly: true
           env:
           - name: SCHEMA_REGISTRY_HOST_NAME
             valueFrom:
@@ -88,10 +95,20 @@ spec:
             value: "true"
           - name: SCHEMA_REGISTRY_HEAP_OPTS
             value: "{{ .Values.heapOptions }}"
-          {{ range $configName, $configValue := .Values.configurationOverrides }}
-          - name: SCHEMA_REGISTRY_{{ $configName | replace "." "_" | upper }}
-            value: {{ $configValue | quote }}
-          {{ end }}
+          {{- range $key, $value := .Values.configurationOverrides }}
+            {{- if (kindIs "map" $value) }}
+              {{- if hasKey $value "secret" }}
+          - name: {{ printf "SCHEMA_REGISTRY_%s" $key | replace "." "_" | upper }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $value.secret.name | quote }}
+                key: {{ $value.secret.key | quote }}
+              {{- end }}
+            {{- else }}
+          - name: {{ printf "SCHEMA_REGISTRY_%s" $key | replace "." "_" | upper }}
+            value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
           {{- range $key, $value := .Values.customEnv }}
           - name: {{ $key | quote }}
             value: {{ $value | quote }}
@@ -114,6 +131,13 @@ spec:
         configMap:
           name: {{ template "cp-schema-registry.fullname" . }}-jmx-configmap
       {{- end }}
+      # TODO: Optional if .Values.configurationOverrides.security.protocol is set to SSL, generic
+      - name: kafka-cluster-ca-cert-secret
+        secret:
+          secretName: kafka-billing-dev-glo1-cluster-ca-cert
+      - name: kafka-user-secret
+        secret:
+          secretName: schema-registry
       {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
