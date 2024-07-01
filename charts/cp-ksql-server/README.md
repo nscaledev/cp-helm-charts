@@ -4,7 +4,6 @@ This chart bootstraps a deployment of a Confluent KSQL Server.
 
 This is an example deployment which runs KSQL Server in non-interactive
 mode.
-The included queries file `queries.sql` is a stub provided to illustrate one possible approach to mounting queries in the server container via ConfigMap.
 
 ## Prerequisites
 
