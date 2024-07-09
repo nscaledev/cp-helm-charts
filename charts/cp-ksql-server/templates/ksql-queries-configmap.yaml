@@ -8,5 +8,8 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 data:
-  queries.sql: |-
-    {{ .Values.queriesSql | nindent 4 }}
+  {{- $files := .Files }}
+  {{- range tuple "queries.sql" }}
+  {{ . }}: |-
+{{ $files.Get . | indent 4 }}
+  {{- end }}

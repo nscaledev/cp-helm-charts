@@ -84,8 +84,6 @@ external:
 ## ref: https://docs.confluent.io/current/ksql/docs/installation/server-config/index.html
 ksql:
   headless: true
-  # -- A string containing a set of ksql statements to run on startup.
-  queriesSql: ""
 
 ## You can list load balanced service endpoint, or list of all brokers (which is hard in K8s).  e.g.:
 ## bootstrapServers: "PLAINTEXT://dozing-prawn-kafka-headless:9092"
