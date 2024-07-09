@@ -76,8 +76,10 @@ spec:
           - name: kafka-user-secret
             mountPath: /etc/tls/kafka-user
             readOnly: true
+          {{- if .Values.ksql.headless }}
           - name: ksql-queries
             mountPath: /etc/ksql/queries
+          {{- end }}
           env:
           - name: KSQL_BOOTSTRAP_SERVERS
             value: {{ template "cp-ksql-server.kafka.bootstrapServers" . }}
@@ -87,10 +89,13 @@ spec:
             value: {{ template "cp-ksql-server.cp-schema-registry.service-name" . }}
           - name: KSQL_HEAP_OPTS
             value: "{{ .Values.heapOptions }}"
+          {{- if .Values.ksql.headless }}
           - name: KSQL_KSQL_QUERIES_FILE
             value: /etc/ksql/queries/queries.sql
+          {{- else }}
           - name: KSQL_LISTENERS
             value: http://0.0.0.0:8088
+          {{- end }}
           {{- range $key, $value := .Values.configurationOverrides }}
             {{- if (kindIs "map" $value) }}
               {{- if hasKey $value "secret" }}
@@ -120,9 +125,11 @@ spec:
         configMap:
           name: {{ template "cp-ksql-server.fullname" . }}-jmx-configmap
       {{- end }}
+      {{- if .Values.ksql.headless }}
       - name: ksql-queries
         configMap:
           name: {{ template "cp-ksql-server.fullname" . }}-ksql-queries-configmap
+      {{- end }}
       # TODO: Optional if .Values.configurationOverrides.security.protocol is set to SSL, generic
       - name: kafka-cluster-ca-cert-secret
         secret:
