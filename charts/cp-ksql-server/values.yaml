@@ -83,7 +83,6 @@ external:
 ## Headless mode
 ## ref: https://docs.confluent.io/current/ksql/docs/installation/server-config/index.html
 ksql:
-  headless: true
   # -- A string containing a set of ksql statements to run on startup.
   queriesSql: ""
 
